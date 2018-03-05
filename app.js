@@ -17,32 +17,13 @@ app.get('/', (request, response) => {
   response.render('home');
 });
 
-// MongoClient.connect('mongodb://localhost:27017', (err, client) => {
-//   if (err) {
-//     console.log('connection refused');
-//   }
-//   else {
-//     console.log('connection established');
-//
-//     app.get('/', (request, response) => {
-//       console.log('router invoked');
-//       let db = client.db('players');
-//       db.collection('test').find({}).toArray((err, docs) => {
-//         if (err) {
-//           console.log('couldnt pass into collection');
-//         }
-//         else {
-//           console.log('got into find\n');
-//           //response.render('names', {'names': docs})
-//           resonse.send('done dona done');
-//         }
-//       });
-//       //db.close();
-//     });
-//   }
-// });
+app.get('/home', (request, response) => {
+  // response.send('You are on your home page');
+  response.render('home');
+});
 
 app.post('/createNewEntry', (request, response) => {
+
   // console.log('---------------request: ', request);
   console.log('---------------request.body: ', request.body);
   let title = request.body.title;
@@ -56,20 +37,26 @@ app.post('/createNewEntry', (request, response) => {
     response.render('failedToAdd', {'value': 'One or more field left missing'});
   }
 
-  MongoClient.connect('mongodb://localhost:27017', (err, client) => {
+  else {
+    MongoClient.connect('mongodb://localhost:27017', (err, client) => {
 
-    if (err) {
-      console.log('cannot connect');
-    }
+      if (err) {
+        console.log('cannot connect');
+      }
 
-    let db = client.db('video');
-    let ackn = db.collection('movies').insertOne({'title': title, 'year': year, 'imdb': imdb});
+      let db = client.db('video');
+      db.collection('movies').insertOne({'title': title, 'year': year, 'imdb': imdb})
+      .then((fulfilled) => {
+        console.log('Ack received: ', fulfilled);
+        console.log('Movie entered is: ', fulfilled.ops[0].title);
+        response.render('success', {'result': fulfilled.ops[0].title})
+      })
+      .catch((rejected) => {
+        response.render('failed', {'result': 'One or more filed left empty. Try again.'})
+      })
 
-    if (ackn.acknowledge == 'true') {
-      //response.render('entryResult', {'key1': title});
-      response.send('Added');
-    }
-  });
+    });
+  }
 
 });
 
